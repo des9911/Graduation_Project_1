@@ -1,0 +1,14 @@
+# YOLOv8 학습 설정 파일
+
+#이미지 경로
+path: datasets/dangpa
+train: images/train  
+val: images/val      
+
+# 클래스 개수 (밑에)
+nc: 2 
+
+# 클래스 이름 : 분류할 객체 이름들인데, 데이터베이스에 추가할 object 이름과 동일해야함
+# 즉 데이터베이스에 dangpa라고 객체를 추가했으면 dangpa라 써붙여야
+names: ['dangpa', 'hanbok'] 
+
