@@ -8,5 +8,4 @@ public class KCultureApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(KCultureApplication.class, args);
 	}
-
 }
