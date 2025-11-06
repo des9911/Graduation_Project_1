@@ -1,0 +1,5 @@
+train: /content/drive/MyDrive/yolo&clip/yolo_dataset/images/train
+val:   /content/drive/MyDrive/yolo&clip/yolo_dataset/images/val
+
+nc: 1
+names: ['pottery']
