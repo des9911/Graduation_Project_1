@@ -14,7 +14,8 @@
         #uploadButton { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; }
         #uploadButton:hover { background-color: #0056b3; }
         #statusMessage { margin-top: 20px; padding: 15px; border-radius: 4px; font-weight: bold; border: 1px solid #ccc; background-color: #e9ecef; }
-        #descriptionOutput { margin-top: 20px; padding: 15px; border-left: 5px solid #28a745; background-color: #e6ffed; font-size: 1.1em; }
+        #descriptionOutput { margin-top: 20px; padding: 15px; border-left: 5px solid #28a745; background-color: #e6ffed; font-size: 1.1em;
+            white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -88,10 +89,14 @@
                 // 백엔드가 JSON 응답에서 'description' 키로 설명을 보냈다고 가정
                 const imageDescription = result.description || "백엔드에서 유효한 설명을 받지 못했습니다.";
 
+                // 🚨 이전에 주석처리했던 \n 치환 로직은 제거하거나 그대로 주석처리 상태를 유지합니다.
+
                 statusMessage.textContent = '상태: ✅ 업로드 및 분석 성공!';
                 statusMessage.style.backgroundColor = 'lightgreen';
 
                 // 4. 추출한 설명을 화면에 표시
+                // ✅ imageDescription 원본 변수를 innerHTML에 삽입합니다.
+                // CSS 'white-space: pre-wrap;'이 \n을 <br>처럼 처리해 줄 것입니다.
                 descriptionOutput.innerHTML = `
                         <strong>[요청 연도]</strong> ${year}년<br>
                         <strong>[분석 결과]</strong> ${imageDescription}
