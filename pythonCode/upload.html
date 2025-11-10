@@ -14,7 +14,8 @@
         #uploadButton { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; }
         #uploadButton:hover { background-color: #0056b3; }
         #statusMessage { margin-top: 20px; padding: 15px; border-radius: 4px; font-weight: bold; border: 1px solid #ccc; background-color: #e9ecef; }
-        #descriptionOutput { margin-top: 20px; padding: 15px; border-left: 5px solid #28a745; background-color: #e6ffed; font-size: 1.1em; }
+        #descriptionOutput { margin-top: 20px; padding: 15px; border-left: 5px solid #28a745; background-color: #e6ffed; font-size: 1.1em;
+            white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
     </div>
 
     <script>
-        // 🚨 중요: 백엔드 API 주소와 엔드포인트를 여기에 맞게 수정하세요.
+        // 백엔드 API 주소와 엔드포인트 여기에 맞게 수정
         const API_ENDPOINT = 'http://localhost:8080/upload'; 
 
         const fileInput = document.getElementById('imageFile');
@@ -53,7 +54,6 @@
             // 초기 상태 및 메시지 초기화
             descriptionOutput.textContent = '분석 결과가 여기에 표시됩니다.';
             descriptionOutput.style.borderLeftColor = '#28a745';
-            
             const file = fileInput.files[0];
             const year = yearInput.value.trim(); // 연도 값 추출
 
@@ -85,12 +85,17 @@
                 if (response.ok) {
                     const result = await response.json();
                     
-                    // 백엔드가 JSON 응답에서 'description' 키로 설명을 보냈다고 가정
+                    //백에서 is_successful의 boolean값을 전달하면됨. true 이면 틀리지 않은거 false 이면 틀린것.
+                    const isSuccessful = result.is_successful === true || result.is_successful === 1;
                     const imageDescription = result.description || "백엔드에서 유효한 설명을 받지 못했습니다.";
+                    
 
                     statusMessage.textContent = '상태: ✅ 업로드 및 분석 성공!';
                     statusMessage.style.backgroundColor = 'lightgreen';
                     
+                    if (!isSuccessful)
+                        descriptionOutput.style.backgroundColor = 'lightcoral';
+
                     // 4. 추출한 설명을 화면에 표시
                     descriptionOutput.innerHTML = `
                         <strong>[요청 연도]</strong> ${year}년<br>
@@ -105,12 +110,14 @@
                     statusMessage.textContent = `상태: ❌ 업로드 실패. 코드: ${response.status}. 백엔드 응답: ${errorText}`;
                     statusMessage.style.backgroundColor = 'lightcoral';
                     descriptionOutput.textContent = '이미지 분석에 실패했습니다. 서버 로그를 확인하세요.';
+                    descriptionOutput.style.backgroundColor = 'lightcoral';
                 }
             } catch (error) {
                 // 네트워크 오류 (예: 서버 연결 안 됨, CORS 문제)
                 statusMessage.textContent = `상태: 💥 네트워크 오류 발생. 서버가 실행 중인지 확인하세요. (${error.message})`;
                 statusMessage.style.backgroundColor = 'lightcoral';
                 descriptionOutput.textContent = '네트워크 연결 오류로 서버에 접속할 수 없습니다.';
+                descriptionOutput.style.backgroundColor = 'lightcoral';
                 console.error('Fetch Error:', error);
             }
         }
