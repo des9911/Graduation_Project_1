@@ -33,7 +33,7 @@
             <button id="uploadButton">이미지 및 연도 전송</button>
         </div>
     
-        <div id="statusMessage">상태: 파일을 선택하고 연도를 입력한 후 버튼을 눌러주세요.</div>
+        <div id="statusMessage">파일을 선택하고 연도를 입력한 후 버튼을 눌러주세요.</div>
     
         <div id="descriptionOutput">분석 결과가 여기에 표시됩니다.</div>
     </div>
@@ -58,13 +58,13 @@
             const year = yearInput.value.trim(); // 연도 값 추출
 
             if (!file || !year || year.length !== 4) {
-                statusMessage.textContent = '상태: 🛑 파일과 4자리 연도를 모두 입력해야 합니다.';
+                statusMessage.textContent = '🛑 파일과 4자리 연도를 모두 입력해야 합니다.';
                 statusMessage.style.backgroundColor = 'yellow';
                 return;
             }
 
             // 업로드 시작 시 상태 표시
-            statusMessage.textContent = `상태: 🚀 파일 "${file.name}" 및 연도 ${year} 분석 요청 중...`;
+            statusMessage.textContent = `🚀 파일 "${file.name}" 및 연도 ${year} 분석 요청 중...`;
             statusMessage.style.backgroundColor = 'lightblue';
 
             // 1. 파일 전송을 위한 FormData 객체 생성
@@ -90,7 +90,7 @@
                     const imageDescription = result.description || "백엔드에서 유효한 설명을 받지 못했습니다.";
                     
 
-                    statusMessage.textContent = '상태: ✅ 업로드 및 분석 성공!';
+                    statusMessage.textContent = '✅ 업로드 및 분석 성공!';
                     statusMessage.style.backgroundColor = 'lightgreen';
                     
                     if (!isSuccessful)
@@ -107,7 +107,7 @@
                 } else {
                     // HTTP 상태 코드 4xx, 5xx 에러 처리
                     const errorText = await response.text();
-                    statusMessage.textContent = `상태: ❌ 업로드 실패. 코드: ${response.status}. 백엔드 응답: ${errorText}`;
+                    statusMessage.textContent = `❌ 업로드 실패. 코드: ${response.status}. 백엔드 응답: ${errorText}`;
                     statusMessage.style.backgroundColor = 'lightcoral';
                     descriptionOutput.textContent = '이미지 분석에 실패했습니다. 서버 로그를 확인하세요.';
                     descriptionOutput.style.backgroundColor = 'lightcoral';
