@@ -59,7 +59,7 @@ print(f"DB에서 탐지 레이블 {len(CANDIDATE_LABELS)}개 로드 완료.")
 # Flask 엔드포인트
 # ===============================================
 
-@app.route('/analyze_image', methods=['POST'])
+@app.route('/upload', methods=['POST'])
 def analyze_image():
     if not detector:
         return jsonify({'status': 'error', 'description': '모델 초기화 실패.'}), 500
@@ -81,11 +81,20 @@ def analyze_image():
         predictions = detector(image, candidate_labels=CANDIDATE_LABELS)
         
         # 3. 탐지된 객체 이름 추출
-        detected_objects = set()
+        # 딕셔너리 사용하여 중복 제거(최대 스코어) 및 box 정보 저장
+        detected = {}
         for prediction in predictions:
             # 신뢰도 점수가 0.1 이상인 결과만 필터링 (Jupyter Notebook과 동일)
-            if prediction["score"] > 0.1:
-                detected_objects.add(prediction["label"])
+            score = prediction["score"]
+            label = prediction["label"]
+            box = prediction["box"]
+            if score > 0.1:
+                if label in detected and score < detected[label][0]:
+                    continue
+                detected[label] = (score, box)
+        
+        # 딕셔너리 키 추출 - 탐지된 객체 이름 리스트
+        detected_objects = list(detected.keys())
         
         # 탐지된 객체가 없을 경우 처리
         if not detected_objects:
@@ -112,6 +121,9 @@ def analyze_image():
         
         # ✅ 추가: 탐지된 모든 객체의 상세 정보를 저장할 리스트
         all_detected_details = [] 
+        
+        # 오류 탐지 여부
+        error_not_detected = True
 
         for name, start_year, description in rows:
             # 탐지된 객체의 상세 정보를 리스트에 추가
@@ -126,6 +138,7 @@ def analyze_image():
                 )
 
         if anachronistic_objects:
+            error_not_detected = False
             # 🚨 오류 문구 (고증 오류 의심)
             analysis_result = (
                 f"🚨 고증 오류 의심: 이미지 연도({input_year}년)보다 늦게 출시된 객체 {len(anachronistic_objects)}개가 탐지되었습니다.\n"
@@ -155,7 +168,8 @@ def analyze_image():
             'status': 'success',
             'year_received': input_year,
             'description': analysis_result, 
-            'detected_count': len(detected_objects)
+            'detected_count': len(detected_objects),
+            'is_successful' : error_not_detected
         })
     
 
@@ -167,4 +181,4 @@ def analyze_image():
 
 if __name__ == '__main__':
     # Flask 실행
-    app.run('0.0.0.0', port=8082, debug=True)
+    app.run('0.0.0.0', port=8080, debug=True)
