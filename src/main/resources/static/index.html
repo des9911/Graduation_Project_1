@@ -16,6 +16,24 @@
         #statusMessage { margin-top: 20px; padding: 15px; border-radius: 4px; font-weight: bold; border: 1px solid #ccc; background-color: #e9ecef; }
         #descriptionOutput { margin-top: 20px; padding: 15px; border-left: 5px solid #28a745; background-color: #e6ffed; font-size: 1.1em;
             white-space: pre-wrap; }
+        #imagePreviewContainer {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            text-align: center;
+            min-height: 450px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fafafa;
+        }
+        #imagePreview { 
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 4px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -35,6 +53,11 @@
 
     <div id="statusMessage">파일을 선택하고 연도를 입력한 후 버튼을 눌러주세요.</div>
 
+    <div id="imagePreviewContainer"> 
+        <img id="imagePreview" src="#" alt="미리보기 이미지">
+        <span id="previewPlaceholder">선택된 이미지가 여기에 표시됩니다.</span>
+    </div>
+
     <div id="descriptionOutput">분석 결과가 여기에 표시됩니다.</div>
 </div>
 
@@ -47,8 +70,30 @@
     const uploadButton = document.getElementById('uploadButton');
     const statusMessage = document.getElementById('statusMessage');
     const descriptionOutput = document.getElementById('descriptionOutput');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
 
     uploadButton.addEventListener('click', handleUpload);
+    fileInput.addEventListener('change', handleFileChange);
+
+    function handleFileChange(event) {
+        const file = event.target.files[0];
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                previewPlaceholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file); // 파일을 Data URL로 읽기
+        } else {
+            // 파일 선택 취소 시 초기 상태로 복구
+            imagePreview.src = '#';
+            imagePreview.style.display = 'none';
+            previewPlaceholder.style.display = 'block';
+        }
+    }
 
     async function handleUpload() {
         // 초기 상태 및 메시지 초기화
@@ -88,12 +133,20 @@
 
                 const isSuccessful = result.is_successful === true || result.is_successful === 1;
                 const imageDescription = result.description || "백엔드에서 유효한 설명을 받지 못했습니다.";
+                const imageUrl = result.image_url; //image 경로로 받음
 
                 statusMessage.textContent = '✅ 업로드 및 분석 성공!';
                 statusMessage.style.backgroundColor = 'lightgreen';
 
-                if (!isSuccessful)
+                if (!isSuccessful){
                     descriptionOutput.style.backgroundColor = 'lightcoral';
+                    descriptionOutput.style.borderLeftColor = 'red';
+                }
+                if (imageUrl) {
+                    imagePreview.src = imageUrl; 
+                    imagePreview.style.display = 'block'; 
+                    previewPlaceholder.style.display = 'none'; 
+                }
 
                 descriptionOutput.innerHTML = `
                         <strong>[요청 연도]</strong> ${year}년<br>
@@ -109,12 +162,15 @@
                 statusMessage.style.backgroundColor = 'lightcoral';
                 descriptionOutput.textContent = '이미지 분석에 실패했습니다. 서버 로그를 확인하세요.';
                 descriptionOutput.style.backgroundColor = 'lightcoral';
+                descriptionOutput.style.borderLeftColor = 'red';
             }
         } catch (error) {
             // 네트워크 오류 (예: 서버 연결 안 됨, CORS 문제)
             statusMessage.textContent = `💥 네트워크 오류 발생. 서버가 실행 중인지 확인하세요. (${error.message})`;
             statusMessage.style.backgroundColor = 'lightcoral';
             descriptionOutput.textContent = '네트워크 연결 오류로 서버에 접속할 수 없습니다.';
+            descriptionOutput.style.backgroundColor = 'lightcoral';
+            descriptionOutput.style.borderLeftColor = 'red';
             console.error('Fetch Error:', error);
         }
     }
