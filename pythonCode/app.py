@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import base64
 import json
 import io
@@ -59,23 +59,24 @@ print(f"DB에서 탐지 레이블 {len(CANDIDATE_LABELS)}개 로드 완료.")
 # Flask 엔드포인트
 # ===============================================
 
+@app.route('/')
+def index():
+    return render_template('upload.html')
+
 @app.route('/upload', methods=['POST'])
 def analyze_image():
     if not detector:
         return jsonify({'status': 'error', 'description': '모델 초기화 실패.'}), 500
         
     try:
-        data = request.get_json()
-        base64_img = data.get('base64Image')
-        input_year = int(data.get('year')) # 연도를 정수로 받음
-        file_name = data.get('fileName')
+        input_year = int(request.form.get('year')) # 연도를 정수로 받음
+        file = request.files.get('image')
+        
+        if not file or not input_year:
+            return jsonify({'message': '이미지 혹은 연도가 누락되었습니다.'}), 400
 
-        if not base64_img or not input_year:
-            return jsonify({'message': 'Base64 이미지 및 연도가 누락되었습니다.'}), 400
-
-        # 1. Base64 디코딩 및 이미지 로딩 (메모리 사용)
-        img_bytes = base64.b64decode(base64_img)
-        image = Image.open(io.BytesIO(img_bytes))
+        # 1. 이미지 로딩
+        image = Image.open(file.stream)
 
         # 2. 객체 탐지 실행
         predictions = detector(image, candidate_labels=CANDIDATE_LABELS)
@@ -143,7 +144,7 @@ def analyze_image():
             analysis_result = (
                 f"🚨 고증 오류 의심: 이미지 연도({input_year}년)보다 늦게 출시된 객체 {len(anachronistic_objects)}개가 탐지되었습니다.\n"
                 f"---------------------------------------------------\n"
-                f"{'\\n'.join(anachronistic_objects)}"
+                f"{'\n'.join(anachronistic_objects)}"
             )
         else:
             # ✅ 성공 문구 수정: 상세 정보와 비교 근거 포함
