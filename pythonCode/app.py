@@ -4,7 +4,7 @@ import json
 import io
 import pymysql
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import torch
 from transformers import pipeline
 
@@ -76,7 +76,7 @@ def analyze_image():
             return jsonify({'message': '이미지 혹은 연도가 누락되었습니다.'}), 400
 
         # 1. 이미지 로딩
-        image = Image.open(file.stream)
+        image = Image.open(file.stream).convert("RGB")
 
         # 2. 객체 탐지 실행
         predictions = detector(image, candidate_labels=CANDIDATE_LABELS)
@@ -85,11 +85,11 @@ def analyze_image():
         # 딕셔너리 사용하여 중복 제거(최대 스코어) 및 box 정보 저장
         detected = {}
         for prediction in predictions:
-            # 신뢰도 점수가 0.1 이상인 결과만 필터링 (Jupyter Notebook과 동일)
+            # 신뢰도 점수가 0.2 이상인 결과만 필터링 (Jupyter Notebook과 동일)
             score = prediction["score"]
             label = prediction["label"]
             box = prediction["box"]
-            if score > 0.1:
+            if score > 0.2:
                 if label in detected and score < detected[label][0]:
                     continue
                 detected[label] = (score, box)
@@ -105,6 +105,15 @@ def analyze_image():
                 'description': analysis_result,
                 'detected_count': 0
             })
+            
+        # 탐지된 객체의 박스 그리기
+        draw = ImageDraw.Draw(image)
+        
+        # 폰트 설정
+        try:
+            font = ImageFont.truetype("arial.ttf", 20)
+        except IOError:
+            font = ImageFont.load_default()
             
         # 4. 탐지된 객체를 DB에서 조회하고 연도 비교
         conn = pymysql.connect(**DB_CONFIG)
@@ -137,6 +146,21 @@ def analyze_image():
                 anachronistic_objects.append(
                     f"'{name}' (출시: {start_year}년, 설명: {description})"
                 )
+                
+                score = detected[name][0]
+                box = detected[name][1]
+                
+                xmin, ymin, xmax, ymax = box['xmin'], box['ymin'], box['xmax'], box['ymax']
+                draw.rectangle((xmin, ymin, xmax, ymax), outline="red", width=3)
+                
+                text = f"{name} ({score:.2f})"
+                bbox = draw.textbbox((xmin, ymin), text, font=font)
+                padding = 2
+                draw.rectangle(
+                    (bbox[0] - padding, bbox[1] - padding, bbox[2] + padding, bbox[3] + padding), 
+                    fill=(255, 0, 0, 128)
+                )
+                draw.text((xmin, ymin), text, fill="white", font=font)
 
         if anachronistic_objects:
             error_not_detected = False
@@ -163,7 +187,10 @@ def analyze_image():
                 f"**[탐지 객체 목록 및 비교]**\n"
                 f"{'\\n'.join(comparison_details)}"
             )
-            
+        
+        output_image_path = "output_image.jpg"
+        image.save(output_image_path)
+        
         # 6. 결과 반환
         return jsonify({
             'status': 'success',
