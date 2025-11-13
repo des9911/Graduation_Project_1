@@ -6,7 +6,6 @@ import pymysql
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import torch
-import os
 from transformers import pipeline
 
 # ====== 1. Flask 및 환경 설정 ======
