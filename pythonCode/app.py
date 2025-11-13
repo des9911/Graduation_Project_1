@@ -6,6 +6,7 @@ import pymysql
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import torch
+import os
 from transformers import pipeline
 
 # ====== 1. Flask 및 환경 설정 ======
@@ -99,11 +100,17 @@ def analyze_image():
         
         # 탐지된 객체가 없을 경우 처리
         if not detected_objects:
+            buffered = io.BytesIO()
+            image.save(buffered, format="JPEG")
+            img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            
             analysis_result = f"요청 연도 {input_year}년. 이미지에서 지정된 K-Culture 관련 객체를 찾지 못했습니다."
             return jsonify({
                 'status': 'success',
                 'description': analysis_result,
-                'detected_count': 0
+                'detected_count': 0,
+                'is_successful': True,
+                'image_data': img_str # 원본 이미지 반환
             })
             
         # 탐지된 객체의 박스 그리기
@@ -149,11 +156,11 @@ def analyze_image():
                 
                 score = detected[name][0]
                 box = detected[name][1]
-                
                 xmin, ymin, xmax, ymax = box['xmin'], box['ymin'], box['xmax'], box['ymax']
-                draw.rectangle((xmin, ymin, xmax, ymax), outline="red", width=3)
                 
+                draw.rectangle((xmin, ymin, xmax, ymax), outline="red", width=3)
                 text = f"{name} ({score:.2f})"
+                
                 bbox = draw.textbbox((xmin, ymin), text, font=font)
                 padding = 2
                 draw.rectangle(
@@ -188,8 +195,9 @@ def analyze_image():
                 f"{'\\n'.join(comparison_details)}"
             )
         
-        output_image_path = "output_image.jpg"
-        image.save(output_image_path)
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
         # 6. 결과 반환
         return jsonify({
@@ -197,7 +205,8 @@ def analyze_image():
             'year_received': input_year,
             'description': analysis_result, 
             'detected_count': len(detected_objects),
-            'is_successful' : error_not_detected
+            'is_successful' : error_not_detected,
+            'image_data': img_str
         })
     
 
